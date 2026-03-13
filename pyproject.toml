@@ -5,6 +5,8 @@ description = "Autonomous camera dolly"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "gphoto2>=2.6.3",
+    "pillow>=12.1.1",
     "pybricks>=3.5.0",
     "pybricksdev>=1.0.0a52",
 ]
