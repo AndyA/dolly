@@ -40,6 +40,7 @@ async def main():
                 )
                 img_file.save(target)
                 last_image_num = img_num
+                # await vble.broadcast(img_num)
 
             await asyncio.sleep(0.05)
 

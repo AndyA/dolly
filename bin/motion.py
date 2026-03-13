@@ -1,8 +1,8 @@
 from pybricks.hubs import InventorHub
 from pybricks.iodevices import XboxController
-from pybricks.parameters import Port
+from pybricks.parameters import Port, Stop
 from pybricks.pupdevices import Motor
-from pybricks.tools import run_task
+from pybricks.tools import run_task, wait
 
 hub = InventorHub(
     broadcast_channel=100,
@@ -37,34 +37,85 @@ controller = XboxController()
 #     return max(min(value, max_value), min_value)
 
 
-async def main():
-    print("Starting")
-    sent = False
-    seq = 0
-    while True:
-        # await multitask(
-        #     track_colour(),
-        #     track_distance(),
-        # )
-        left, right = controller.triggers()
+class OneShot:
+    def __init__(self, *, trigger=10):
+        self.trigger = trigger
+        self.state = False
 
+    def update(self, level):
+        if level >= self.trigger:
+            if not self.state:
+                self.state = True
+                return True
+        else:
+            self.state = False
+        return False
+
+
+class Snapper:
+    def __init__(self):
+        self.seq = -1
+
+    async def snap(self):
+        self.seq += 1
+        await hub.ble.broadcast(self.seq)
+        print("snap:", self.seq)
+        # while True:
+        #     ack = hub.ble.observe(101)
+        #     if ack == self.seq:
+        #         break
+        #     wait(50)
+        # print("ack")
+
+
+class Engine:
+    def __init__(self):
+        print("Starting")
+        self.left_trig = OneShot()
+        self.right_trig = OneShot()
+        self.snapper = Snapper()
+
+    def poll_triggers(self) -> tuple[bool, bool]:
+        left, right = controller.triggers()
+        left_hit = self.left_trig.update(left)
+        right_hit = self.right_trig.update(right)
+        return left_hit, right_hit
+
+    async def sequence(self):
+        for frame in range(60):
+            print("frame:", frame)
+            left_hit, right_hit = self.poll_triggers()
+            if right_hit:
+                print("stopping")
+                break
+            await drive_motor.run_time(10, 1000, then=Stop.COAST, wait=True)
+            await wait(500)
+            await self.snapper.snap()
+            await wait(800)
+
+    def drive(self):
         x, y = controller.joystick_left()
         _, drive = controller.joystick_right()
-        # left = clamp(y + x, -100, 100)
-        # right = clamp(y - x, -100, 100)
-        # print(x, y, left, right, tx, ty)
+
         pan_motor.dc(-x)
         tilt_motor.dc(y)
         drive_motor.dc(drive)
 
-        if right > 10:
-            if not sent:
-                await hub.ble.broadcast(seq)
-                print("snap:", seq)
-                seq += 1
-                sent = True
-        else:
-            sent = False
+    async def main(self):
+        while True:
+            # await multitask(
+            #     track_colour(),
+            #     track_distance(),
+            # )
+            self.drive()
+
+            left_hit, right_hit = self.poll_triggers()
+
+            if left_hit:
+                await self.sequence()
+            if right_hit:
+                await self.snapper.snap()
 
 
-run_task(main())
+engine = Engine()
+run_task(engine.main())
