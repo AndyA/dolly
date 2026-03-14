@@ -11,9 +11,9 @@ hub = InventorHub(
 # hub.display.text("Hello, World")
 
 
-tilt_motor = Motor(Port.F, gears=[[1, 40], [8, 28]])
-pan_motor = Motor(Port.B, gears=[[1, 40], [24, 24], [12, 60]])
-drive_motor = Motor(Port.D, gears=[[8, 40]])
+drive_motor = Motor(Port.A, gears=[[8, 40]])
+pan_motor = Motor(Port.C, gears=[[1, 40], [24, 24], [12, 60]])
+tilt_motor = Motor(Port.E, gears=[[1, 40], [8, 28]])
 
 print("Waiting for XBox Controller...")
 
